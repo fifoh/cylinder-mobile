@@ -271,6 +271,139 @@ let ionian = {
   15: 26
 }
 
+let dorian = {
+  0: 0,
+  1: 2,
+  2: 3,
+  3: 5,
+  4: 7,
+  5: 9,
+  6: 10,
+  7: 12,
+  8: 14,
+  9: 15,
+  10: 17,
+  11: 19,
+  12: 21,
+  13: 22,
+  14: 24,
+  15: 26
+}
+
+let mixolydian = {
+  0: 0,
+  1: 2,
+  2: 4,
+  3: 5,
+  4: 7,
+  5: 9,
+  6: 10,
+  7: 12,
+  8: 14,
+  9: 16,
+  10: 17,
+  11: 19,
+  12: 21,
+  13: 22,
+  14: 24,
+  15: 26
+}
+
+let aoelian = {
+  0: 0,
+  1: 2,
+  2: 3,
+  3: 5,
+  4: 7,
+  5: 8,
+  6: 10,
+  7: 12,
+  8: 14,
+  9: 15,
+  10: 17,
+  11: 19,
+  12: 20,
+  13: 22,
+  14: 24,
+  15: 26
+}
+
+let chromatic = {
+  0: 0,
+  1: 1,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  6: 6,
+  7: 7,
+  8: 8,
+  9: 9,
+  10: 10,
+  11: 11,
+  12: 12,
+  13: 13,
+  14: 14,
+  15: 15
+}
+
+let harmonicMinor = {
+  0: 0,
+  1: 2,
+  2: 3,
+  3: 5,
+  4: 7,
+  5: 8,
+  6: 11,
+  7: 12,
+  8: 14,
+  9: 15,
+  10: 17,
+  11: 19,
+  12: 20,
+  13: 23,
+  14: 24,
+  15: 26
+}
+
+let wholeTone = {
+  0: 0,
+  1: 2,
+  2: 4,
+  3: 6,
+  4: 8,
+  5: 10,
+  6: 12,
+  7: 14,
+  8: 16,
+  9: 18,
+  10: 20,
+  11: 22,
+  12: 24,
+  13: 26,
+  14: 28,
+  15: 30
+}
+
+let octatonic = {
+  0: 0,
+  1: 1,
+  2: 3,
+  3: 4,
+  4: 6,
+  5: 7,
+  6: 9,
+  7: 10,
+  8: 12,
+  9: 13,
+  10: 15,
+  11: 16,
+  12: 18,
+  13: 19,
+  14: 21,
+  15: 22
+}
+
 // initial scale mapping (ie the default)
 let scaleMappings = majorPentatonic;
 
@@ -746,6 +879,28 @@ function changeScale() {
     if (selectedScale === 'Ionian') {
       scaleMappings = ionian;
     }
+    if (selectedScale === 'Dorian') {
+      scaleMappings = dorian;
+    }
+    if (selectedScale === 'Mixolydian') {
+      scaleMappings = mixolydian;
+    }
+    if (selectedScale === 'Aoelian') {
+      scaleMappings = aoelian;
+    }
+    if (selectedScale === 'Chromatic') {
+      scaleMappings = chromatic;
+    }
+    if (selectedScale === 'Harmonic Minor') {
+      scaleMappings = harmonicMinor;
+    }    
+    if (selectedScale === 'Whole Tone') {
+      scaleMappings = wholeTone;
+    }
+    if (selectedScale === 'Octatonic') {
+      scaleMappings = octatonic;
+    }
+    
     console.log('Selected scale:', selectedScale);
   }
 }
@@ -788,9 +943,9 @@ function positionDurationSlider() {
 }
 
 function positionDropdownMenus() {
-  scalesDropdown.position(windowWidth/2, windowHeight - 10);
+  scalesDropdown.position(windowWidth/2, windowHeight - 25);
   
-  instrumentDropdown.position(10, windowHeight - 10);
+  instrumentDropdown.position(10, windowHeight - 25);
 }
 
 function calculateCylinderY() {
