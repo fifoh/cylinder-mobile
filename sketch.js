@@ -409,6 +409,7 @@ let scaleMappings = majorPentatonic;
 
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
+  window.addEventListener('resize', resizeCanvasToWindow);
   frameRate(60);
 
   // Calculate and store the initial cylinder coordinates
@@ -1074,4 +1075,9 @@ function handleNoteClick() {
     }
     // print(notes); debug
   }
+}
+
+function resizeCanvasToWindow() {
+  // Resize the canvas to the window's width and height
+  resizeCanvas(windowWidth, windowHeight);
 }
