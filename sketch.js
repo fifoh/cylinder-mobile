@@ -1,4 +1,19 @@
-let currentSet = 1;
+let debounceTimer;
+let debounceTimerArray; 
+
+// Track the currently loaded instrument sets and their buffers
+let loadedInstrumentSetBuffers = {};
+
+// clickable buttons for instruments
+let buttonSize = 20; // Example size of the button
+let ellipseButtons = [];
+let ellipseColors = [
+  [255,223,186],   // Red
+  [186,255,201],   // Green
+  [186,225,255]    // Blue
+];
+
+let individualInstrumentArray = new Array(37).fill(1);
 
 let touchThreshold = 30; // Adjust this threshold as needed
 let startX, startY;
@@ -39,7 +54,7 @@ let totalDuration = note_duration * totalHorizontalPoints;
 let audioBuffers = [];
 let timeouts = [];
 let isPlaying = false;
-let audioContext;
+let audioContext = new (window.AudioContext || window.webkitAudioContext)();
 let bufferLoader;
 let startTime;
 let playButton;
@@ -104,104 +119,87 @@ let lineSpacing = 37;
 
 function preload() {
   audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  loadAudioSet(currentSet);
+  loadAudioSet(individualInstrumentArray);
 }
 
-function loadAudioSet(setNumber) {
-  let filePaths = [];
-  if (setNumber === 1) {
-    filePaths = [
-      'comb/0.mp3',
-      'comb/1.mp3',
-      'comb/2.mp3',
-      'comb/3.mp3',
-      'comb/4.mp3',
-      'comb/5.mp3',
-      'comb/6.mp3',
-      'comb/7.mp3',
-      'comb/8.mp3',
-      'comb/9.mp3',
-      'comb/10.mp3',
-      'comb/11.mp3',
-      'comb/12.mp3',
-      'comb/13.mp3',
-      'comb/14.mp3',
-      'comb/15.mp3',
-      'comb/16.mp3',
-      'comb/17.mp3',
-      'comb/18.mp3',
-      'comb/19.mp3',
-      'comb/20.mp3',
-      'comb/21.mp3',
-      'comb/22.mp3',
-      'comb/23.mp3',
-      'comb/24.mp3',
-      'comb/25.mp3',
-      'comb/26.mp3',
-      'comb/27.mp3',
-      'comb/28.mp3',
-      'comb/29.mp3',
-      'comb/30.mp3',
-      'comb/31.mp3',
-      'comb/32.mp3',
-      'comb/33.mp3',
-      'comb/34.mp3',
-      'comb/35.mp3',
-      'comb/36.mp3'
-    ];
-  } else if (setNumber === 2) {
-    filePaths = [
-      'piano/0.mp3',
-      'piano/1.mp3',
-      'piano/2.mp3',
-      'piano/3.mp3',
-      'piano/4.mp3',
-      'piano/5.mp3',
-      'piano/6.mp3',
-      'piano/7.mp3',
-      'piano/8.mp3',
-      'piano/9.mp3',
-      'piano/10.mp3',
-      'piano/11.mp3',
-      'piano/12.mp3',
-      'piano/13.mp3',
-      'piano/14.mp3',
-      'piano/15.mp3',
-      'piano/16.mp3',
-      'piano/17.mp3',
-      'piano/18.mp3',
-      'piano/19.mp3',
-      'piano/20.mp3',
-      'piano/21.mp3',
-      'piano/22.mp3',
-      'piano/23.mp3',
-      'piano/24.mp3',
-      'piano/25.mp3',
-      'piano/26.mp3',
-      'piano/27.mp3',
-      'piano/28.mp3',
-      'piano/29.mp3',
-      'piano/30.mp3',
-      'piano/31.mp3',
-      'piano/32.mp3',
-      'piano/33.mp3',
-      'piano/34.mp3',
-      'piano/35.mp3',
-      'piano/36.mp3'
-    ];
+// Function to load audio set based on individualInstrumentArray
+function loadAudioSet(individualInstrumentArray) {
+  let filePathsToLoad = [];
+  let bufferIndicesToLoad = [];
+
+  for (let i = 0; i < 37; i++) {
+    let setNumber = individualInstrumentArray[i];
+    let instrumentSet = '';
+
+    if (setNumber === 1) {
+      instrumentSet = 'comb';
+    } else if (setNumber === 2) {
+      instrumentSet = 'piano';
+    } else if (setNumber === 3) {
+      instrumentSet = 'guitar';
+    } else {
+      console.error(`Invalid set number ${setNumber} at index ${i}`);
+      return;
+    }
+
+    let filePath = `${instrumentSet}/${i}.mp3`;
+    filePathsToLoad.push(filePath);
+    bufferIndicesToLoad.push(i);
   }
 
-  bufferLoader = new BufferLoader(
-    audioContext,
-    filePaths,
-    finishedLoading
-  );
-  bufferLoader.load();
+  if (filePathsToLoad.length > 0) {
+    bufferLoader = new BufferLoader(
+      audioContext,
+      filePathsToLoad,
+      (newBufferList) => finishedLoading(newBufferList, bufferIndicesToLoad)
+    );
+    bufferLoader.load();
+  } else {
+    // If no files need to be loaded, call finishedLoading with an empty array
+    finishedLoading([], []);
+  }
 }
 
-function finishedLoading(bufferList) {
-  for (let i = 0; i < bufferList.length; i++) {
-    audioBuffers[i] = bufferList[i];
+function finishedLoading(newBufferList, bufferIndicesToLoad) {
+  for (let i = 0; i < newBufferList.length; i++) {
+    let bufferIndex = bufferIndicesToLoad[i];
+    audioBuffers[bufferIndex] = newBufferList[i];
+
+    let setNumber = individualInstrumentArray[bufferIndex];
+    let instrumentSet = '';
+    if (setNumber === 1) {
+      instrumentSet = 'comb';
+    } else if (setNumber === 2) {
+      instrumentSet = 'piano';
+    } else if (setNumber === 3) {
+      instrumentSet = 'guitar';
+    }
+
+    let filePath = `${instrumentSet}/${bufferIndex}.mp3`;
+    loadedInstrumentSetBuffers[filePath] = newBufferList[i];
+  }
+
+  // Remove entries from loadedInstrumentSetBuffers that were not loaded in this batch
+  if (newBufferList.length > 0) {
+    let filePathsLoaded = newBufferList.map((buffer, index) => {
+      let bufferIndex = bufferIndicesToLoad[index];
+      let setNumber = individualInstrumentArray[bufferIndex];
+      let instrumentSet = '';
+      if (setNumber === 1) {
+        instrumentSet = 'comb';
+      } else if (setNumber === 2) {
+        instrumentSet = 'piano';
+      } else if (setNumber === 3) {
+        instrumentSet = 'guitar';
+      }
+      return `${instrumentSet}/${bufferIndex}.mp3`;
+    });
+
+    for (let filePath in loadedInstrumentSetBuffers) {
+      if (!filePathsLoaded.includes(filePath)) {
+        delete loadedInstrumentSetBuffers[filePath];
+      }
+    }
   }
 }
 
@@ -464,19 +462,6 @@ function setup() {
 
   // Set a callback function for when an option is selected
   scalesDropdown.changed(changeScale);
-
-  // Instrument dropdown
-  instrumentDropdown = createSelect();
-  
-  // Add options to the dropdown
-  instrumentDropdown.option('Select an Instrument:', '');
-  instrumentDropdown.option('Comb');
-  instrumentDropdown.option('Piano');
-  instrumentDropdown.option('etc');
-  instrumentDropdown.option('etc');
-
-  // Set a callback function for when an option is selected
-  instrumentDropdown.changed(changeInstrument);  
   
   positionDropdownMenus();
   
@@ -581,80 +566,6 @@ function SphericalProjection(x, y, z, angleX, angleY, angleZ) {
   tempZ = y * sinX + z * cosX;
 
   return { x: tempX, y: tempY, z: tempZ };
-}
-
-
-function mousePressed() {
-  isDragging = false; // Initially not dragging
-  previousMouseX = mouseX;
-  previousMouseY = mouseY;
-}
-
-function mouseDragged() {
-  // Check if mouse is within the defined area
-  if (mouseY > canvasTopBoundary) {
-    isDragging = true; // Mouse is being dragged
-
-    let deltaX = mouseX - previousMouseX;
-    let deltaY = mouseY - previousMouseY;
-
-    angleY -= deltaX * 0.008; // Adjust sensitivity as needed
-    rotationalValue = angleY / TWO_PI % 1;
-
-    previousMouseX = mouseX;
-    previousMouseY = mouseY;
-  }
-}
-
-function mouseReleased() {
-  // Check if mouse is within the defined area
-  if (mouseY > canvasTopBoundary) {
-    if (!isDragging) {
-      handleNoteClick(); // Handle note creation if not dragging
-    }
-  }
-}
-function handleNoteClick() {
-  translate(width / 2, height / 2);
-  let nearestPoint = null;
-  let nearestDistance = Infinity; // Track the nearest distance
-
-  for (let i = 0; i < cylinderCoordinates.length; i++) {
-    for (let j = 0; j < cylinderCoordinates[i].length; j++) {
-      let coords = cylinderCoordinates[i][j];
-      let { x, y, z } = coords;
-      let projectionMath = SphericalProjection(x, y, z, angleX, angleY, angleZ);
-      let scaleFactor = 400 / (projectionMath.z + 300);
-      let projectedX = projectionMath.x * scaleFactor;
-      let projectedY = projectionMath.y * scaleFactor;
-
-      // Check the distance between mouse and projected point
-      let d = dist(mouseX - width / 2, mouseY - height / 2, projectedX, projectedY);
-
-      // Consider the point if it's closer than previous points and within a 10-pixel radius
-      if (d < nearestDistance && d < 10) {
-        let alphaThreshold = 100; // Adjust for better alpha detection
-        let alphaValue = map(scaleFactor, 0.9, 2, 0, 255);
-        if (alphaValue >= alphaThreshold) {
-          nearestPoint = { x: projectedX, y: projectedY, i, j };
-          nearestDistance = d; // Update the nearest distance
-        }
-      }
-    }
-  }
-
-  // Toggle the note at the nearest point if one was found
-  if (nearestPoint !== null) {
-    let { i, j } = nearestPoint;
-    if (notes[i][j]) {
-      colors[i][j] = color(0, 0, 0, 35);
-      notes[i][j] = false;
-    } else {
-      colors[i][j] = color(0, 0, 0);
-      notes[i][j] = true;
-    }
-    // print(notes); debug
-  }
 }
 
 function playSound(buffer) {
@@ -901,28 +812,6 @@ function changeScale() {
     if (selectedScale === 'Octatonic') {
       scaleMappings = octatonic;
     }
-    
-    console.log('Selected scale:', selectedScale);
-  }
-}
-
-function changeInstrument() {
-  // Initialise new sample set here
-  let selectedInstrument = instrumentDropdown.value();
-  if (selectedInstrument !== 'disabled') {
-    // Process selected scale
-    
-    if (selectedInstrument === 'Comb') {
-      setNumber = 1;
-    }    
-    
-    if (selectedInstrument === 'Piano') {
-      setNumber = 2;
-    }
-    
-    console.log('Selected instrument:', selectedInstrument);
-    console.log('Loading audio set:', setNumber);
-    loadAudioSet(setNumber);
   }
 }
 
@@ -945,8 +834,6 @@ function positionDurationSlider() {
 
 function positionDropdownMenus() {
   scalesDropdown.position(windowWidth/2, windowHeight - 25);
-  
-  instrumentDropdown.position(10, windowHeight - 25);
 }
 
 function calculateCylinderY() {
@@ -976,15 +863,27 @@ function drawfixedHorizontalLines(cylinderYCoordinates) {
     fill(lineColors[i]); // Fill color same as stroke color
     
     // Calculate rectangle dimensions and draw
-    rect(rectStartX, y - 0.5, rectWidth, 5); // Adjust y position for center alignment
-
-    // Optionally, you can debug or output values to ensure they match expectations
-    // console.log(`Drawing rectangle from (${rectStartX}, ${y - 0.5}) with width ${rectWidth}`);
+    rect(rectStartX, y - 0.5, rectWidth, 5);
+    
+    // add clickable buttons next to lines
+    let buttonSize = 20; // Example size of the button
+    let buttonX = -windowWidth / 2.5 - 10;
+    let buttonY = y;
+    ellipseButtons.push({ id: i, x: buttonX, y: buttonY, size: buttonSize });
+    
+    // Adjust color index using scaleMappings
+    let originalIndex = scaleMappings[i];
+    let colIndex = individualInstrumentArray[originalIndex] - 1;
+    
+    fill(ellipseColors[colIndex]); // ellipse color
+    stroke(lineColors[i]); // Stroke color same as line color
+    strokeWeight(1);
+    
+    // Draw the button (a circle)
+    ellipse(buttonX, buttonY, buttonSize, buttonSize); 
   }
 }
 
-
-// audiocontext resume weirdness - for some mobiles
 function touchStarted() {
   if (getAudioContext().state !== 'running') {
     getAudioContext().resume();
@@ -1017,21 +916,39 @@ function touchMoved() {
 }
 
 function touchEnded() {
-  // Only process if there was an initial touch
-  if (typeof startX !== 'undefined' && typeof startY !== 'undefined') {
-    // Calculate distance moved during touch
-    let dx = previousTouchX - startX;
-    let dy = previousTouchY - startY;
-    let touchMovedDistance = Math.sqrt(dx * dx + dy * dy);
+  clearTimeout(debounceTimer);
 
-    if (!isDragging && touchMovedDistance < touchThreshold) {
-      handleNoteClick(); // Handle note creation if not dragging and touch distance is within threshold
+  debounceTimer = setTimeout(() => {
+    // Only process if there was an initial touch
+    if (typeof startX !== 'undefined' && typeof startY !== 'undefined') {
+      // Calculate distance moved during touch
+      let dx = previousTouchX - startX;
+      let dy = previousTouchY - startY;
+      let touchMovedDistance = Math.sqrt(dx * dx + dy * dy);
+
+      if (!isDragging && touchMovedDistance < touchThreshold) {
+        let transformedMouseX = mouseX - width / 2;
+        let transformedMouseY = mouseY - height / 2;
+        let buttonClicked = false;
+
+        for (let btn of ellipseButtons) {
+          let d = dist(transformedMouseX, transformedMouseY, btn.x, btn.y);
+          if (d < btn.size / 2) {
+            updateIndividualInstrumentArray(btn.id);
+            buttonClicked = true;
+          }
+        }
+        
+        if (!buttonClicked) {
+          handleNoteClick(); // Handle note creation if not dragging and touch distance is within threshold
+        }
+      }
+
+      // Reset startX and startY for the next touch
+      startX = undefined;
+      startY = undefined;
     }
-  }
-
-  // Reset startX and startY for the next touch
-  startX = undefined;
-  startY = undefined;
+  }, 100); // Adjust debounce delay as needed (e.g., 100 milliseconds)
 }
 
 function handleNoteClick() {
@@ -1080,4 +997,27 @@ function handleNoteClick() {
 function resizeCanvasToWindow() {
   // Resize the canvas to the window's width and height
   resizeCanvas(windowWidth, windowHeight);
+}
+
+function updateIndividualInstrumentArray(indexToUpdate) {
+  // Clear previous debounce timer
+  clearTimeout(debounceTimerArray);
+
+  // Set a new debounce timer
+  debounceTimerArray = setTimeout(() => {
+    // Ensure indexToUpdate is within valid range
+    if (indexToUpdate >= 0 && indexToUpdate < individualInstrumentArray.length) {
+      
+      // map the value according to scale dictionary
+      indexToUpdate = scaleMappings[indexToUpdate];
+      
+      
+      // Update the value at the specified indexToUpdate
+      // Increment the value and constrain it to 1, 2, or 3
+      individualInstrumentArray[indexToUpdate] = (individualInstrumentArray[indexToUpdate] % 3) + 1;
+      
+      // Reload audio set with updated individualInstrumentArray
+      loadAudioSet(individualInstrumentArray);
+    }
+  }, 50); // Adjust debounce delay as needed (e.g., 50 milliseconds)
 }
