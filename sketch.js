@@ -836,7 +836,7 @@ function changeScale() {
 }
 
 function positionclearButton() {
-  clearButton.position(20, 80);
+  clearButton.position(windowWidth-70, 80);
 }
 
 function positionMetroIcon() {
