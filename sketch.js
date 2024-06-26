@@ -435,8 +435,11 @@ function setup() {
   positionplus_minus_Buttons();
   
   // Create the slider for duration
+  let sliderWrapper = select('.slider-wrapper');
   durationSlider = createSlider(200, 1000, 800); // Min 200 ms, Max 1s, Initial 200 ms
   positionDurationSlider();
+  durationSlider.parent(sliderWrapper);
+  durationSlider.style('width', '90px');
   
   note_duration = durationSlider.value();
   totalDuration = note_duration * totalHorizontalPoints; // Initialize total duration based on initial note duration
@@ -853,7 +856,7 @@ function positionplus_minus_Buttons() {
 }
 
 function positionDurationSlider() {
-  durationSlider.position(105, 31);
+  durationSlider.position(115, 31);
 }
 
 function positionDropdownMenus() {
