@@ -836,11 +836,11 @@ function changeScale() {
 }
 
 function positionclearButton() {
-  clearButton.position(windowWidth-70, 80);
+  clearButton.position(windowWidth-50, 80);
 }
 
 function positionMetroIcon() {
-  metroImage.position(70, 20);
+  metroImage.position(65, 20);
 }
 
 function positionplayButton() {
@@ -848,12 +848,12 @@ function positionplayButton() {
 }
 
 function positionplus_minus_Buttons() {
-  addButton.position(windowWidth-70, 20);
-  removeButton.position(windowWidth-120, 20);
+  addButton.position(windowWidth-50, 20);
+  removeButton.position(windowWidth-100, 20);
 }
 
 function positionDurationSlider() {
-  durationSlider.position(110, 31);
+  durationSlider.position(105, 31);
 }
 
 function positionDropdownMenus() {
