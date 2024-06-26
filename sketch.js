@@ -8,9 +8,9 @@ let loadedInstrumentSetBuffers = {};
 let buttonSize = 20; // Example size of the button
 let ellipseButtons = [];
 let ellipseColors = [
-  [255,223,186],   // Red
-  [186,255,201],   // Green
-  [186,225,255]    // Blue
+  [255,228,209],   // Red
+  [203,237,209],   // Green
+  [187,234,255]    // Blue
 ];
 
 let individualInstrumentArray = new Array(37).fill(1);
@@ -417,11 +417,19 @@ function setup() {
   // create play button
   createPlayButton();
   
+  // add metro symbol
+  metroImage = createImg('images/metro_icon.jpg', 'tempo');
+  metroImage.size(45, 45);
+  positionMetroIcon();
+  
+  
   // Create Add and Remove buttons
-  addButton = createButton('+');
+  addButton = createImg('images/plus_icon.jpg', '+');
+  addButton.size(45, 45);
   addButton.mousePressed(addNote);
   
-  removeButton = createButton('-');
+  removeButton = createImg('images/minus_icon.jpg', '-');
+  removeButton.size(45, 45);
   removeButton.mousePressed(removeNote);
   
   positionplus_minus_Buttons();
@@ -434,7 +442,8 @@ function setup() {
   totalDuration = note_duration * totalHorizontalPoints; // Initialize total duration based on initial note duration
   
   // Clear button
-  clearButton = createButton('✖');
+  clearButton = createImg('images/bin_icon.jpg', '✖');
+  clearButton.size(45, 45);
   clearButton.mousePressed(clearNotes);
   positionclearButton();
   
@@ -462,6 +471,18 @@ function setup() {
 
   // Set a callback function for when an option is selected
   scalesDropdown.changed(changeScale);
+  
+  // Instrument dropdown
+  instrumentDropdown = createSelect();
+  
+  // Add options to the dropdown
+  instrumentDropdown.option('Select an Instrument:', '');
+  instrumentDropdown.option('Comb');
+  instrumentDropdown.option('Piano');
+  instrumentDropdown.option('Harp');
+
+  // Set a callback function for when an option is selected
+  instrumentDropdown.changed(changeInstrument);  
   
   positionDropdownMenus();
   
@@ -579,7 +600,8 @@ function playSound(buffer) {
 }
 
 function createPlayButton() {
-  playButton = createButton('▶');
+  playButton = createImg('images/play_icon.jpg', '▶');
+  playButton.size(45, 45);  
   playButton.mousePressed(togglePlayback);
   positionplayButton();
 }
@@ -625,27 +647,25 @@ function playAllNotes() {
 
 async function togglePlayback() {
   if (!isPlaying) {
-    
     unmapped_noteDuration = durationSlider.value();
     note_duration = map(unmapped_noteDuration, 200, 1000, 600, 50);
     
-    
     totalDuration = note_duration * totalHorizontalPoints; // Recalculate total duration based on new note duration
     
-    if (angleY!=0){
+    if (angleY != 0) {
       await smoothResetRotation(); // Wait for the reset rotation to complete
     }
 
     isPlaying = true;
     startTime = millis(); // Set the start time
     playAllNotes();
-    playButton.html('◼');
+    playButton.attribute('src', 'images/stop_icon.jpg'); // Change to stop icon
     durationSlider.attribute('disabled', ''); // Disable the slider
   } else {
     // Stop playback
     isPlaying = false;
     clearTimeouts();
-    playButton.html('▶');
+    playButton.attribute('src', 'images/play_icon.jpg'); // Change back to play icon
     durationSlider.removeAttribute('disabled'); // Enable the slider
     smoothResetRotation(); // Run the reset rotation at the end
   }
@@ -816,7 +836,11 @@ function changeScale() {
 }
 
 function positionclearButton() {
-  clearButton.position(20, 50);
+  clearButton.position(20, 80);
+}
+
+function positionMetroIcon() {
+  metroImage.position(70, 20);
 }
 
 function positionplayButton() {
@@ -824,16 +848,18 @@ function positionplayButton() {
 }
 
 function positionplus_minus_Buttons() {
-  addButton.position(20, 80);
-  removeButton.position(50, 80);
+  addButton.position(windowWidth-70, 20);
+  removeButton.position(windowWidth-120, 20);
 }
 
 function positionDurationSlider() {
-  durationSlider.position(60, 21);
+  durationSlider.position(110, 31);
 }
 
 function positionDropdownMenus() {
   scalesDropdown.position(windowWidth/2, windowHeight - 25);
+  
+  instrumentDropdown.position(10, windowHeight - 25);
 }
 
 function calculateCylinderY() {
@@ -855,7 +881,7 @@ function drawfixedHorizontalLines(cylinderYCoordinates) {
     stroke(lineColors[i]);
     strokeWeight(1 * pixelDensity()); // Adjust stroke weight for pixel density
     let y = cylinderYCoordinates[i] * 1.4;
-    let rectStartX = -windowWidth / 2.5; // Rectangle start X position
+    let rectStartX = -windowWidth / 2.4; // Rectangle start X position
     let rectEndX = -windowWidth / 3.5;   // Rectangle end X position
     let rectWidth = (rectEndX - rectStartX); // Rectangle width
     
@@ -877,7 +903,7 @@ function drawfixedHorizontalLines(cylinderYCoordinates) {
     
     fill(ellipseColors[colIndex]); // ellipse color
     stroke(lineColors[i]); // Stroke color same as line color
-    strokeWeight(1);
+    strokeWeight(0);
     
     // Draw the button (a circle)
     ellipse(buttonX, buttonY, buttonSize, buttonSize); 
@@ -1020,4 +1046,26 @@ function updateIndividualInstrumentArray(indexToUpdate) {
       loadAudioSet(individualInstrumentArray);
     }
   }, 50); // Adjust debounce delay as needed (e.g., 50 milliseconds)
+}
+
+function changeInstrument() {
+  // Initialise new sample set here
+  let selectedInstrument = instrumentDropdown.value();
+  if (selectedInstrument !== 'disabled') {
+    // Process selected scale
+    
+    if (selectedInstrument === 'Comb') {
+      individualInstrumentArray = new Array(37).fill(1);
+    }    
+    
+    if (selectedInstrument === 'Piano') {
+      individualInstrumentArray = new Array(37).fill(2);
+    }
+    if (selectedInstrument === 'Harp') {
+      individualInstrumentArray = new Array(37).fill(3);
+    }
+    console.log('Selected instrument:', selectedInstrument);
+    
+    loadAudioSet(individualInstrumentArray);
+  }
 }
