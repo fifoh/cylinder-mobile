@@ -307,7 +307,7 @@ let mixolydian = {
   15: 26
 }
 
-let aoelian = {
+let aeolian = {
   0: 0,
   1: 2,
   2: 3,
@@ -820,8 +820,8 @@ function changeScale() {
     if (selectedScale === 'Mixolydian') {
       scaleMappings = mixolydian;
     }
-    if (selectedScale === 'Aoelian') {
-      scaleMappings = aoelian;
+    if (selectedScale === 'Aeolian') {
+      scaleMappings = aeolian;
     }
     if (selectedScale === 'Chromatic') {
       scaleMappings = chromatic;
