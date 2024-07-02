@@ -210,11 +210,6 @@ let radius;
 let cylinderHeight;
 
 // define some scale mappings
-// 1. majorPentatonic
-// 2. minorPentatonic
-// 3. etc etc
-
-
 let majorPentatonic = {
   0: 0,
   1: 2,
@@ -458,21 +453,14 @@ function setup() {
   
   // Add options
   scalesDropdown.option('Select a Scale:', ''); // This will be the heading
+  scalesDropdown.disable('Select a Scale:', '');
   
-  scalesDropdown.option('--- Pentatonic ---');
-  scalesDropdown.disable('--- Pentatonic ---');
-  scalesDropdown.option('Major');
-  scalesDropdown.option('Minor');
-
-  scalesDropdown.option('--- Modal ---');
-  scalesDropdown.disable('--- Modal ---');
-  scalesDropdown.option('Ionian');
-  scalesDropdown.option('Dorian');
-  scalesDropdown.option('Mixolydian');
-  scalesDropdown.option('Aeolian');
-  
-  scalesDropdown.option('--- Other ---');
-  scalesDropdown.disable('--- Other ---');
+  scalesDropdown.option('Major Pentatonic');
+  scalesDropdown.option('Minor Pentatonic');
+  scalesDropdown.option('Major scale');
+  scalesDropdown.option('Dorian mode');
+  scalesDropdown.option('Mixolydian mode');
+  scalesDropdown.option('Aeolian mode');
   scalesDropdown.option('Chromatic');
   scalesDropdown.option('Harmonic Minor');
   scalesDropdown.option('Whole Tone');
@@ -812,22 +800,22 @@ function changeScale() {
   let selectedScale = scalesDropdown.value();
   if (selectedScale !== 'disabled') {
     // Process selected scale
-    if (selectedScale === 'Major') {// pentatonic
+    if (selectedScale === 'Major Pentatonic') {// pentatonic
       scaleMappings = majorPentatonic;
     } 
-    if (selectedScale === 'Minor') {// pentatonic
+    if (selectedScale === 'Minor Pentatonic') {// pentatonic
       scaleMappings = minorPentatonic;
     }     
-    if (selectedScale === 'Ionian') {
+    if (selectedScale === 'Major scale') {
       scaleMappings = ionian;
     }
-    if (selectedScale === 'Dorian') {
+    if (selectedScale === 'Dorian mode') {
       scaleMappings = dorian;
     }
-    if (selectedScale === 'Mixolydian') {
+    if (selectedScale === 'Mixolydian mode') {
       scaleMappings = mixolydian;
     }
-    if (selectedScale === 'Aeolian') {
+    if (selectedScale === 'Aeolian mode') {
       scaleMappings = aeolian;
     }
     if (selectedScale === 'Chromatic') {
@@ -1005,7 +993,7 @@ function handleNoteClick() {
       let d = dist(mouseX - width / 2, mouseY - height / 2, projectedX, projectedY);
 
       // Consider the point if it's closer than previous points and within a 10-pixel radius
-      if (d < nearestDistance && d < 10) {
+      if (d < nearestDistance && d < 20) {
         let alphaThreshold = 100; // Adjust for better alpha detection
         let alphaValue = map(scaleFactor, 0.9, 2, 0, 255);
         if (alphaValue >= alphaThreshold) {
