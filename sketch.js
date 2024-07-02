@@ -1,3 +1,6 @@
+// to do:
+// In touchEnded function fix references to mouseX and mouseY
+
 let debounceTimer;
 let debounceTimerArray; 
 
@@ -743,6 +746,8 @@ function clearNotes() {
     colors.push(rowColors);
     notes.push(rowNotes);
   }
+  instrumentDropdown.selected('Comb');
+  individualInstrumentArray = new Array(37).fill(1); 
 }
 
 function addNote() {
