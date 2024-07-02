@@ -11,9 +11,9 @@ let loadedInstrumentSetBuffers = {};
 let buttonSize = 20; // Example size of the button
 let ellipseButtons = [];
 let ellipseColors = [
-  [255,228,209],   // Red
-  [203,237,209],   // Green
-  [187,234,255]    // Blue
+  [255,228,209],   // Red [255,228,209]
+  [203,237,209],   // Green [203,237,209]
+  [167,234,255]    // Blue [187,234,255]
 ];
 
 let individualInstrumentArray = new Array(37).fill(1);
@@ -733,6 +733,8 @@ function clearNotes() {
 
     colors.push(rowColors);
     notes.push(rowNotes);
+    individualInstrumentArray = new Array(37).fill(1);
+    loadAudioSet(individualInstrumentArray);
   }
 }
 
