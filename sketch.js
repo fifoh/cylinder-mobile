@@ -1,31 +1,25 @@
-// to do:
-// In touchEnded function fix references to mouseX and mouseY
-
+p5.disableFriendlyErrors = true;
 let debounceTimer;
-let debounceTimerArray; 
-
-// Track the currently loaded instrument sets and their buffers
+let debounceTimerArray;
 let loadedInstrumentSetBuffers = {};
 
-// clickable buttons for instruments
-let buttonSize = 20; // Example size of the button
+let buttonSize = 20;
 let ellipseButtons = [];
 let ellipseColors = [
-  [255,228,209],   // Red [255,228,209]
-  [203,237,209],   // Green [203,237,209]
-  [167,234,255]    // Blue [187,234,255]
+  [255, 228, 209], // Red [255,228,209]
+  [203, 237, 209], // Green [203,237,209]
+  [167, 234, 255], // Blue [187,234,255]
 ];
 
 let individualInstrumentArray = new Array(37).fill(1);
 
-let touchThreshold = 30; // Adjust this threshold as needed
+let touchThreshold = 30;
 let startX, startY;
-
 let cylinderYCoordinates;
 let clearButton;
 let canvasTopBoundary = 70;
 
-// start index for array starting index - playback
+// start index for playback array
 let angleX = 0;
 let angleY = 0;
 let angleZ = 0;
@@ -33,27 +27,17 @@ let cylinderCoordinates = [];
 let colors = [];
 let notes = [];
 
-// mouse dragging
 let isDragging = false;
-let previousMouseX = 0;
-let previousMouseY = 0;
-
-// rotational value is between 0 and 1
 let rotationalValue = 0;
-
 let addButton;
 let removeButton;
-
-let note_duration = 200; // Duration of each note in ms
-
+let note_duration = 200;
 
 let totalHorizontalPoints = 32;
 let totalVerticalPoints = 3;
-
-// Total duration of all notes
 let totalDuration = note_duration * totalHorizontalPoints;
 
-// audio playback setup
+// audio
 let audioBuffers = [];
 let timeouts = [];
 let isPlaying = false;
@@ -63,8 +47,9 @@ let startTime;
 let playButton;
 let durationSlider;
 let timeoutIds = [];
+let radius;
+let cylinderHeight;
 
-// BufferLoader class to handle loading audio files
 function BufferLoader(context, urlList, callback) {
   this.context = context;
   this.urlList = urlList;
@@ -73,19 +58,17 @@ function BufferLoader(context, urlList, callback) {
   this.loadCount = 0;
 }
 
-BufferLoader.prototype.loadBuffer = function(url, index) {
+BufferLoader.prototype.loadBuffer = function (url, index) {
   let request = new XMLHttpRequest();
-  request.open('GET', url, true);
-  request.responseType = 'arraybuffer';
-
+  request.open("GET", url, true);
+  request.responseType = "arraybuffer";
   let loader = this;
-
-  request.onload = function() {
+  request.onload = function () {
     loader.context.decodeAudioData(
       request.response,
-      function(buffer) {
+      function (buffer) {
         if (!buffer) {
-          console.error('Error decoding file data: ' + url);
+          console.error("Error decoding file data: " + url);
           return;
         }
         loader.bufferList[index] = buffer;
@@ -93,31 +76,27 @@ BufferLoader.prototype.loadBuffer = function(url, index) {
           loader.onload(loader.bufferList);
         }
       },
-      function(error) {
-        console.error('decodeAudioData error for ' + url, error);
+      function (error) {
+        console.error("decodeAudioData error for " + url, error);
       }
     );
   };
-
-  request.onerror = function() {
-    console.error('BufferLoader: XHR error for ' + url);
+  request.onerror = function () {
+    console.error("BufferLoader: XHR error for " + url);
   };
-
   request.send();
 };
 
-BufferLoader.prototype.load = function() {
+BufferLoader.prototype.load = function () {
   for (let i = 0; i < this.urlList.length; ++i) {
     this.loadBuffer(this.urlList[i], i);
   }
 };
 
-// Line color variables
-let defaultLineColor = [0, 0, 0, 40]; // Light grey with some transparency
-let activeLineColor = [255, 255, 255]; // White color for active line
+// Line colours
+let defaultLineColor = [0, 0, 0, 40];
+let activeLineColor = [255, 255, 255];
 let lineColors = Array(totalVerticalPoints).fill(defaultLineColor);
-// Define line parameters
-
 let lineSpacing = 37;
 
 function preload() {
@@ -125,31 +104,26 @@ function preload() {
   loadAudioSet(individualInstrumentArray);
 }
 
-// Function to load audio set based on individualInstrumentArray
 function loadAudioSet(individualInstrumentArray) {
   let filePathsToLoad = [];
   let bufferIndicesToLoad = [];
-
   for (let i = 0; i < 37; i++) {
     let setNumber = individualInstrumentArray[i];
-    let instrumentSet = '';
-
+    let instrumentSet = "";
     if (setNumber === 1) {
-      instrumentSet = 'comb';
+      instrumentSet = "comb";
     } else if (setNumber === 2) {
-      instrumentSet = 'piano';
+      instrumentSet = "piano";
     } else if (setNumber === 3) {
-      instrumentSet = 'guitar';
+      instrumentSet = "guitar";
     } else {
       console.error(`Invalid set number ${setNumber} at index ${i}`);
       return;
     }
-
     let filePath = `${instrumentSet}/${i}.mp3`;
     filePathsToLoad.push(filePath);
     bufferIndicesToLoad.push(i);
   }
-
   if (filePathsToLoad.length > 0) {
     bufferLoader = new BufferLoader(
       audioContext,
@@ -158,7 +132,6 @@ function loadAudioSet(individualInstrumentArray) {
     );
     bufferLoader.load();
   } else {
-    // If no files need to be loaded, call finishedLoading with an empty array
     finishedLoading([], []);
   }
 }
@@ -169,31 +142,28 @@ function finishedLoading(newBufferList, bufferIndicesToLoad) {
     audioBuffers[bufferIndex] = newBufferList[i];
 
     let setNumber = individualInstrumentArray[bufferIndex];
-    let instrumentSet = '';
+    let instrumentSet = "";
     if (setNumber === 1) {
-      instrumentSet = 'comb';
+      instrumentSet = "comb";
     } else if (setNumber === 2) {
-      instrumentSet = 'piano';
+      instrumentSet = "piano";
     } else if (setNumber === 3) {
-      instrumentSet = 'guitar';
+      instrumentSet = "guitar";
     }
-
     let filePath = `${instrumentSet}/${bufferIndex}.mp3`;
     loadedInstrumentSetBuffers[filePath] = newBufferList[i];
   }
-
-  // Remove entries from loadedInstrumentSetBuffers that were not loaded in this batch
   if (newBufferList.length > 0) {
     let filePathsLoaded = newBufferList.map((buffer, index) => {
       let bufferIndex = bufferIndicesToLoad[index];
       let setNumber = individualInstrumentArray[bufferIndex];
-      let instrumentSet = '';
+      let instrumentSet = "";
       if (setNumber === 1) {
-        instrumentSet = 'comb';
+        instrumentSet = "comb";
       } else if (setNumber === 2) {
-        instrumentSet = 'piano';
+        instrumentSet = "piano";
       } else if (setNumber === 3) {
-        instrumentSet = 'guitar';
+        instrumentSet = "guitar";
       }
       return `${instrumentSet}/${bufferIndex}.mp3`;
     });
@@ -206,10 +176,6 @@ function finishedLoading(newBufferList, bufferIndicesToLoad) {
   }
 }
 
-let radius;
-let cylinderHeight;
-
-// define some scale mappings
 let majorPentatonic = {
   0: 0,
   1: 2,
@@ -226,8 +192,8 @@ let majorPentatonic = {
   12: 28,
   13: 31,
   14: 33,
-  15: 36
-}
+  15: 36,
+};
 
 let minorPentatonic = {
   0: 0,
@@ -245,8 +211,8 @@ let minorPentatonic = {
   12: 29,
   13: 31,
   14: 34,
-  15: 36
-}
+  15: 36,
+};
 
 let ionian = {
   0: 0,
@@ -264,8 +230,8 @@ let ionian = {
   12: 21,
   13: 23,
   14: 24,
-  15: 26
-}
+  15: 26,
+};
 
 let dorian = {
   0: 0,
@@ -283,8 +249,8 @@ let dorian = {
   12: 21,
   13: 22,
   14: 24,
-  15: 26
-}
+  15: 26,
+};
 
 let mixolydian = {
   0: 0,
@@ -302,8 +268,8 @@ let mixolydian = {
   12: 21,
   13: 22,
   14: 24,
-  15: 26
-}
+  15: 26,
+};
 
 let aeolian = {
   0: 0,
@@ -321,8 +287,8 @@ let aeolian = {
   12: 20,
   13: 22,
   14: 24,
-  15: 26
-}
+  15: 26,
+};
 
 let chromatic = {
   0: 0,
@@ -340,8 +306,8 @@ let chromatic = {
   12: 12,
   13: 13,
   14: 14,
-  15: 15
-}
+  15: 15,
+};
 
 let harmonicMinor = {
   0: 0,
@@ -359,8 +325,8 @@ let harmonicMinor = {
   12: 20,
   13: 23,
   14: 24,
-  15: 26
-}
+  15: 26,
+};
 
 let wholeTone = {
   0: 0,
@@ -378,8 +344,8 @@ let wholeTone = {
   12: 24,
   13: 26,
   14: 28,
-  15: 30
-}
+  15: 30,
+};
 
 let octatonic = {
   0: 0,
@@ -397,97 +363,81 @@ let octatonic = {
   12: 18,
   13: 19,
   14: 21,
-  15: 22
-}
+  15: 22,
+};
 
-// initial scale mapping (ie the default)
 let scaleMappings = majorPentatonic;
 
 function setup() {
   createCanvas(windowWidth, windowHeight, WEBGL);
-  window.addEventListener('resize', resizeCanvasToWindow);
+  window.addEventListener("resize", resizeCanvasToWindow);
   frameRate(60);
 
-  // Calculate and store the initial cylinder coordinates
-  radius = windowWidth * 0.2; // 50% of the screen width
-  cylinderHeight = windowHeight * 0.4; // 60% of the screen height
-  
-  // create play button
+  radius = windowWidth * 0.2;
+  cylinderHeight = windowHeight * 0.4;
+
   createPlayButton();
-  
-  // add metro symbol
-  metroImage = createImg('images/metro_icon.jpg', 'tempo');
+
+  metroImage = createImg("images/metro_icon.jpg", "tempo");
   metroImage.size(45, 45);
   positionMetroIcon();
-  
-  
-  // Create Add and Remove buttons
-  addButton = createImg('images/plus_icon.jpg', '+');
+
+  addButton = createImg("images/plus_icon.jpg", "+");
   addButton.size(45, 45);
-  addButton.mousePressed(addNote);
-  
-  removeButton = createImg('images/minus_icon.jpg', '-');
+  addButton.touchStarted(addNote);
+
+  removeButton = createImg("images/minus_icon.jpg", "-");
   removeButton.size(45, 45);
-  removeButton.mousePressed(removeNote);
-  
+  removeButton.touchStarted(removeNote);
+
   positionplus_minus_Buttons();
-  
-  // Create the slider for duration
-  let sliderWrapper = select('.slider-wrapper');
+
+  let sliderWrapper = select(".slider-wrapper");
   durationSlider = createSlider(200, 1000, 800); // Min 200 ms, Max 1s, Initial 200 ms
   positionDurationSlider();
   durationSlider.parent(sliderWrapper);
-  durationSlider.style('width', '90px');
-  
+  durationSlider.style("width", "90px");
+
   note_duration = durationSlider.value();
-  totalDuration = note_duration * totalHorizontalPoints; // Initialize total duration based on initial note duration
-  
-  // Clear button
-  clearButton = createImg('images/bin_icon.jpg', '✖');
+  totalDuration = note_duration * totalHorizontalPoints;
+
+  clearButton = createImg("images/bin_icon.jpg", "✖");
   clearButton.size(45, 45);
-  clearButton.mousePressed(clearNotes);
+  clearButton.touchStarted(clearNotes);
   positionclearButton();
-  
-  // Scale dropdown
+
   scalesDropdown = createSelect();
-  
-  // Add options
-  scalesDropdown.option('Select a Scale:', ''); // This will be the heading
-  scalesDropdown.disable('Select a Scale:', '');
-  
-  scalesDropdown.option('Major Pentatonic');
-  scalesDropdown.option('Minor Pentatonic');
-  scalesDropdown.option('Major scale');
-  scalesDropdown.option('Dorian mode');
-  scalesDropdown.option('Mixolydian mode');
-  scalesDropdown.option('Aeolian mode');
-  scalesDropdown.option('Chromatic');
-  scalesDropdown.option('Harmonic Minor');
-  scalesDropdown.option('Whole Tone');
-  scalesDropdown.option('Octatonic');
-
-  // Set a callback function for when an option is selected
+  scalesDropdown.option("Select a Scale:", ""); // This will be the heading
+  scalesDropdown.disable("Select a Scale:", "");
+  scalesDropdown.option("Major Pentatonic");
+  scalesDropdown.option("Minor Pentatonic");
+  scalesDropdown.option("Major scale");
+  scalesDropdown.option("Dorian mode");
+  scalesDropdown.option("Mixolydian mode");
+  scalesDropdown.option("Aeolian mode");
+  scalesDropdown.option("Chromatic");
+  scalesDropdown.option("Harmonic Minor");
+  scalesDropdown.option("Whole Tone");
+  scalesDropdown.option("Octatonic");
   scalesDropdown.changed(changeScale);
-  
-  // Instrument dropdown
-  instrumentDropdown = createSelect();
-  
-  // Add options to the dropdown
-  instrumentDropdown.option('Instrument:');
-  instrumentDropdown.disable('Instrument:');
-  instrumentDropdown.option('Comb');
-  instrumentDropdown.option('Piano');
-  instrumentDropdown.option('Harp');
 
-  // Set a callback function for when an option is selected
-  instrumentDropdown.changed(changeInstrument);  
-  
+  instrumentDropdown = createSelect();
+  instrumentDropdown.option("Instrument:");
+  instrumentDropdown.disable("Instrument:");
+  instrumentDropdown.option("Comb");
+  instrumentDropdown.option("Piano");
+  instrumentDropdown.option("Harp");
+  instrumentDropdown.changed(changeInstrument);
   positionDropdownMenus();
-  
-  // initialise points
 
   for (let i = 0; i < totalVerticalPoints; i++) {
-    let y = map(i, 0, totalVerticalPoints, cylinderHeight / 2, -cylinderHeight / 2);
+    let y = map(
+      i,
+      0,
+      totalVerticalPoints,
+      cylinderHeight / 2,
+      -cylinderHeight / 2
+    );
     let rowCoordinates = [];
     let rowColors = [];
     let rowNotes = [];
@@ -495,8 +445,8 @@ function setup() {
     for (let j = 0; j < totalHorizontalPoints; j++) {
       let angle = map(j, 0, totalHorizontalPoints, 0, TWO_PI);
 
-      let x = radius * cos(angle);
-      let z = radius * sin(angle);
+      let x = radius * Math.cos(angle);
+      let z = radius * Math.sin(angle);
 
       rowCoordinates.push({ x, y, z });
       rowColors.push(color(0, 0, 0, 35)); // Initialize with light grey
@@ -516,33 +466,24 @@ function draw() {
     let elapsedTime = millis() - startTime;
     rotationalValue = (elapsedTime % totalDuration) / totalDuration;
     angleY = rotationalValue * TWO_PI;
-  }  
-  
-  calculateCylinderY();
+  }
 
-  // Draw the fixed horizontal lines
+  calculateCylinderY();
   drawfixedHorizontalLines(cylinderYCoordinates);
-  
-  if (keyIsDown(RIGHT_ARROW)) {
-    angleY -= 0.015;
-    rotationalValue = angleY / TWO_PI % 1;
-  }
-  if (keyIsDown(LEFT_ARROW)) {
-    angleY += 0.015;
-    rotationalValue = angleY / TWO_PI % 1;
-  }
+
+  const scaleFactorBase = 400;
+  const scaleFactorOffset = 300;
 
   for (let i = 0; i < cylinderCoordinates.length; i++) {
     for (let j = 0; j < cylinderCoordinates[i].length; j++) {
       let coords = cylinderCoordinates[i][j];
       let { x, y, z } = coords;
-      let projectionMath = SphericalProjection(x, y, z, angleX, angleY, angleZ);
-      let scaleFactor = 400 / (projectionMath.z + 300);
-      let projectedX = projectionMath.x * scaleFactor;
-      let projectedY = projectionMath.y * scaleFactor;
+      let projection = SphericalProjection(x, y, z, angleX, angleY, angleZ);
+      let scaleFactor = scaleFactorBase / (projection.z + scaleFactorOffset);
+      let projectedX = projection.x * scaleFactor;
+      let projectedY = projection.y * scaleFactor;
 
       let alpha = map(scaleFactor, 0.9, 2, 0, 255);
-      // was 0.9, 2, 0, 255
 
       if (notes[i][j]) {
         fill(0, alpha);
@@ -558,9 +499,7 @@ function draw() {
   }
 }
 
-
 function SphericalProjection(x, y, z, angleX, angleY, angleZ) {
-  // Precompute sine and cosine of angles
   const cosX = Math.cos(angleX);
   const sinX = Math.sin(angleX);
   const cosY = Math.cos(angleY);
@@ -568,19 +507,16 @@ function SphericalProjection(x, y, z, angleX, angleY, angleZ) {
   const cosZ = Math.cos(angleZ);
   const sinZ = Math.sin(angleZ);
 
-  // Rotate around Z-axis
   let tempX = x * cosZ - y * sinZ;
   let tempY = x * sinZ + y * cosZ;
   x = tempX;
   y = tempY;
 
-  // Rotate around Y-axis
   tempX = x * cosY + z * sinY;
   let tempZ = -x * sinY + z * cosY;
   x = tempX;
   z = tempZ;
 
-  // Rotate around X-axis
   tempY = y * cosX - z * sinX;
   tempZ = y * sinX + z * cosX;
 
@@ -598,9 +534,9 @@ function playSound(buffer) {
 }
 
 function createPlayButton() {
-  playButton = createImg('images/play_icon.jpg', '▶');
-  playButton.size(45, 45);  
-  playButton.mousePressed(togglePlayback);
+  playButton = createImg("images/play_icon.jpg", "▶");
+  playButton.size(45, 45);
+  playButton.touchStarted(togglePlayback);
   positionplayButton();
 }
 
@@ -608,29 +544,25 @@ function playAllNotes() {
   if (timeoutIds.length > 0) {
     return; // Exit if the loop is already running
   }
-
-  isPlaying = true; // Set the flag to indicate playback is in progress
-
-  let startIndex = 18; // Start playback from array index 19
+  isPlaying = true;
+  let startIndex = 18; // Playback starting index
 
   let loopFunction = () => {
-    for (let j = 0; j < notes[0].length; j++) { // Loop through each vertical position
-      let adjustedIndex = (j + startIndex) % notes[0].length; // Adjust index to start from startIndex and loop around
+    for (let j = 0; j < notes[0].length; j++) {
+      let adjustedIndex = (j + startIndex) % notes[0].length;
       let timeoutId = setTimeout(() => {
-        // Check if playback is still desired
         if (!isPlaying) {
-          clearTimeouts(); // Stop the loop if playback is not desired
+          clearTimeouts();
           return;
         }
-        for (let i = 0; i < notes.length; i++) { // Loop through each note layer
+        for (let i = 0; i < notes.length; i++) {
           if (notes[i][adjustedIndex]) {
             let bufferIndex = scaleMappings[i];
             playSound(audioBuffers[bufferIndex]);
-            changeLineColor(i); // Change the color of the corresponding line
+            changeLineColor(i);
           }
         }
-      }, j * note_duration); // Adjust the delay for sequential order
-
+      }, j * note_duration);
       timeoutIds.push(timeoutId);
     }
 
@@ -639,39 +571,39 @@ function playAllNotes() {
       timeoutIds.push(timeoutId);
     }
   };
-
-  loopFunction(); // Start the loop
+  loopFunction();
 }
 
 async function togglePlayback() {
   if (!isPlaying) {
     unmapped_noteDuration = durationSlider.value();
     note_duration = map(unmapped_noteDuration, 200, 1000, 600, 50);
-    
-    totalDuration = note_duration * totalHorizontalPoints; // Recalculate total duration based on new note duration
-    
+
+    totalDuration = note_duration * totalHorizontalPoints;
     if (angleY != 0) {
-      await smoothResetRotation(); // Wait for the reset rotation to complete
+      await smoothResetRotation();
     }
 
     isPlaying = true;
-    startTime = millis(); // Set the start time
+    clearButton.attribute("src", "images/bin_greyed.jpg");
+    startTime = millis();
     playAllNotes();
-    playButton.attribute('src', 'images/stop_icon.jpg'); // Change to stop icon
-    durationSlider.attribute('disabled', ''); // Disable the slider
+    playButton.attribute("src", "images/stop_icon.jpg");
+    durationSlider.attribute("disabled", "");  
   } else {
-    // Stop playback
+    // Stop
     isPlaying = false;
+    clearButton.attribute("src", "images/bin_icon.jpg");
     clearTimeouts();
-    playButton.attribute('src', 'images/play_icon.jpg'); // Change back to play icon
-    durationSlider.removeAttribute('disabled'); // Enable the slider
-    smoothResetRotation(); // Run the reset rotation at the end
+    playButton.attribute("src", "images/play_icon.jpg");
+    durationSlider.removeAttribute("disabled");
+    smoothResetRotation();
   }
 }
 
 function clearTimeouts() {
-  timeoutIds.forEach(timeoutId => clearTimeout(timeoutId));
-  timeoutIds = []; // Reset the array
+  timeoutIds.forEach((timeoutId) => clearTimeout(timeoutId));
+  timeoutIds = [];
 }
 
 function smoothResetRotation() {
@@ -682,12 +614,12 @@ function smoothResetRotation() {
     let startValue = rotationalValue;
 
     let startTime = millis();
-    let targetY = Math.round(startY / TWO_PI) * TWO_PI; // Calculate the nearest multiple of TWO_PI
+    let targetY = Math.round(startY / TWO_PI) * TWO_PI;
 
     function animate() {
       let currentTime = millis();
       let elapsedTime = currentTime - startTime;
-      let progress = elapsedTime / 500; // reset rotation duration
+      let progress = elapsedTime / 500;
 
       if (progress < 1) {
         angleX = lerp(startX, 0, progress);
@@ -700,7 +632,7 @@ function smoothResetRotation() {
         angleY = targetY;
         angleZ = 0;
         rotationalValue = 0;
-        resolve(); // Resolve the promise when animation completes
+        resolve();
       }
     }
 
@@ -708,29 +640,26 @@ function smoothResetRotation() {
   });
 }
 
-
 function changeLineColor(lineIndex) {
-  lineColors[lineIndex] = activeLineColor; // Change the line color to active color
+  lineColors[lineIndex] = activeLineColor;
   setTimeout(() => {
-    lineColors[lineIndex] = defaultLineColor; // Revert the line color to default after a short delay
-  }, note_duration / 2); // Revert after half the duration of the note
+    lineColors[lineIndex] = defaultLineColor;
+  }, note_duration / 2);
 }
 
-
-// Function to clear all points
 function clearNotes() {
+  if (isPlaying) {
+    return; // Do nothing if isPlaying is true
+  }  
   colors = [];
   notes = [];
-  
   for (let i = 0; i < totalVerticalPoints; i++) {
     let rowColors = [];
     let rowNotes = [];
-
     for (let j = 0; j < totalHorizontalPoints; j++) {
-      rowColors.push(color(0, 0, 0, 35)); // Initialize with light grey
-      rowNotes.push(false); // Initialize as not filled
+      rowColors.push(color(0, 0, 0, 35));
+      rowNotes.push(false);
     }
-
     colors.push(rowColors);
     notes.push(rowNotes);
     individualInstrumentArray = new Array(37).fill(1);
@@ -739,49 +668,51 @@ function clearNotes() {
 }
 
 function addNote() {
-  if (totalVerticalPoints < 15) { // Row limit currently set to 15
+  if (totalVerticalPoints < 15) {
     totalVerticalPoints++;
     updateArraysForVerticalPoints();
   }
 }
 
 function removeNote() {
-  if (totalVerticalPoints > 3) { // Prevent having less than 3 rows
+  if (totalVerticalPoints > 3) {
     totalVerticalPoints--;
     updateArraysForVerticalPoints();
   }
 }
 
 function updateArraysForVerticalPoints() {
-  // Create temporary arrays to hold updated data
   let newCylinderCoordinates = [];
   let newColors = [];
   let newNotes = [];
   let newLineColors = Array(totalVerticalPoints).fill(defaultLineColor);
 
-  radius = windowWidth * 0.2; // 50% of the screen width
-  cylinderHeight = windowHeight * 0.4; // 60% of the screen height
-  
+  const radius = windowWidth * 0.2;
+  const cylinderHeight = windowHeight * 0.4;
+  const halfCylinderHeight = cylinderHeight / 2;
+  const totalHorizontalPointsReciprocal = 1 / totalHorizontalPoints;
+  const totalVerticalPointsReciprocal = 1 / totalVerticalPoints;
 
   for (let i = 0; i < totalVerticalPoints; i++) {
-    let y = map(i, 0, totalVerticalPoints, cylinderHeight / 2, -cylinderHeight / 2);
+    const y =
+      halfCylinderHeight - i * cylinderHeight * totalVerticalPointsReciprocal;
     let rowCoordinates = [];
     let rowColors = [];
     let rowNotes = [];
 
     for (let j = 0; j < totalHorizontalPoints; j++) {
-      let angle = map(j, 0, totalHorizontalPoints, 0, TWO_PI);
-      let x = radius * cos(angle);
-      let z = radius * sin(angle);
+      const angle = j * TWO_PI * totalHorizontalPointsReciprocal;
+      const x = radius * Math.cos(angle);
+      const z = radius * Math.sin(angle);
 
       rowCoordinates.push({ x, y, z });
 
       if (i < cylinderCoordinates.length && j < cylinderCoordinates[i].length) {
-        rowColors.push(colors[i][j]); // Copy existing color
-        rowNotes.push(notes[i][j]); // Copy existing note
+        rowColors.push(colors[i][j]);
+        rowNotes.push(notes[i][j]);
       } else {
-        rowColors.push(color(0, 0, 0, 35)); // Initialize with light grey
-        rowNotes.push(false); // Initialize as not filled
+        rowColors.push(color(0, 0, 0, 35));
+        rowNotes.push(false);
       }
     }
 
@@ -790,7 +721,6 @@ function updateArraysForVerticalPoints() {
     newNotes.push(rowNotes);
   }
 
-  // Update the global arrays with the new data
   cylinderCoordinates = newCylinderCoordinates;
   colors = newColors;
   notes = newNotes;
@@ -800,43 +730,45 @@ function updateArraysForVerticalPoints() {
 function changeScale() {
   // Handle the change in scale selection here
   let selectedScale = scalesDropdown.value();
-  if (selectedScale !== 'disabled') {
+  if (selectedScale !== "disabled") {
     // Process selected scale
-    if (selectedScale === 'Major Pentatonic') {// pentatonic
+    if (selectedScale === "Major Pentatonic") {
+      // pentatonic
       scaleMappings = majorPentatonic;
-    } 
-    if (selectedScale === 'Minor Pentatonic') {// pentatonic
+    }
+    if (selectedScale === "Minor Pentatonic") {
+      // pentatonic
       scaleMappings = minorPentatonic;
-    }     
-    if (selectedScale === 'Major scale') {
+    }
+    if (selectedScale === "Major scale") {
       scaleMappings = ionian;
     }
-    if (selectedScale === 'Dorian mode') {
+    if (selectedScale === "Dorian mode") {
       scaleMappings = dorian;
     }
-    if (selectedScale === 'Mixolydian mode') {
+    if (selectedScale === "Mixolydian mode") {
       scaleMappings = mixolydian;
     }
-    if (selectedScale === 'Aeolian mode') {
+    if (selectedScale === "Aeolian mode") {
       scaleMappings = aeolian;
     }
-    if (selectedScale === 'Chromatic') {
+    if (selectedScale === "Chromatic") {
       scaleMappings = chromatic;
     }
-    if (selectedScale === 'Harmonic Minor') {
+    if (selectedScale === "Harmonic Minor") {
       scaleMappings = harmonicMinor;
-    }    
-    if (selectedScale === 'Whole Tone') {
+    }
+    if (selectedScale === "Whole Tone") {
       scaleMappings = wholeTone;
     }
-    if (selectedScale === 'Octatonic') {
+    if (selectedScale === "Octatonic") {
       scaleMappings = octatonic;
     }
   }
 }
 
 function positionclearButton() {
-  clearButton.position(windowWidth-50, 80);
+  clearButton.position(windowWidth - 50, 80);
 }
 
 function positionMetroIcon() {
@@ -848,8 +780,8 @@ function positionplayButton() {
 }
 
 function positionplus_minus_Buttons() {
-  addButton.position(windowWidth-50, 20);
-  removeButton.position(windowWidth-100, 20);
+  addButton.position(windowWidth - 50, 20);
+  removeButton.position(windowWidth - 100, 20);
 }
 
 function positionDurationSlider() {
@@ -857,8 +789,7 @@ function positionDurationSlider() {
 }
 
 function positionDropdownMenus() {
-  scalesDropdown.position(windowWidth/2, windowHeight - 25);
-  
+  scalesDropdown.position(windowWidth / 2, windowHeight - 25);
   instrumentDropdown.position(10, windowHeight - 25);
 }
 
@@ -867,53 +798,42 @@ function calculateCylinderY() {
   cylinderYCoordinates = [];
   for (let i = 0; i < cylinderCoordinates.length; i++) {
     if (cylinderCoordinates[i].length > 0) {
-      // Assuming the y-coordinates for the rows are consistent across the rows
       cylinderYCoordinates.push(cylinderCoordinates[i][0].y);
     }
   }
-  
-  // Sort the y-coordinates to ensure they are in order
-  cylinderYCoordinates.sort((a, b) => b - a);  
+  cylinderYCoordinates.sort((a, b) => b - a);
 }
 
 function drawfixedHorizontalLines(cylinderYCoordinates) {
   for (let i = 0; i < cylinderYCoordinates.length; i++) {
     stroke(lineColors[i]);
-    strokeWeight(1 * pixelDensity()); // Adjust stroke weight for pixel density
+    strokeWeight(1 * pixelDensity());
     let y = cylinderYCoordinates[i] * 1.4;
-    let rectStartX = -windowWidth / 2.4; // Rectangle start X position
-    let rectEndX = -windowWidth / 3.5;   // Rectangle end X position
-    let rectWidth = (rectEndX - rectStartX); // Rectangle width
-    
-    noStroke(); // No stroke for rectangles
-    fill(lineColors[i]); // Fill color same as stroke color
-    
-    // Calculate rectangle dimensions and draw
+    let rectStartX = -windowWidth / 2.4;
+    let rectEndX = -windowWidth / 3.5;
+    let rectWidth = rectEndX - rectStartX;
+
+    noStroke();
+    fill(lineColors[i]);
     rect(rectStartX, y - 0.5, rectWidth, 5);
-    
-    // add clickable buttons next to lines
-    let buttonSize = 20; // Example size of the button
+
+    let buttonSize = 20;
     let buttonX = -windowWidth / 2.5 - 10;
     let buttonY = y;
     ellipseButtons.push({ id: i, x: buttonX, y: buttonY, size: buttonSize });
-    
-    // Adjust color index using scaleMappings
     let originalIndex = scaleMappings[i];
     let colIndex = individualInstrumentArray[originalIndex] - 1;
-    
-    fill(ellipseColors[colIndex]); // ellipse color
-    stroke(lineColors[i]); // Stroke color same as line color
+    fill(ellipseColors[colIndex]);
+    stroke(lineColors[i]);
     strokeWeight(0);
-    
-    // Draw the button (a circle)
-    ellipse(buttonX, buttonY, buttonSize, buttonSize); 
+    ellipse(buttonX, buttonY, buttonSize, buttonSize);
   }
 }
 
 function touchStarted() {
-  if (getAudioContext().state !== 'running') {
+  if (getAudioContext().state !== "running") {
     getAudioContext().resume();
-  }  
+  }
   if (touches.length > 0) {
     isDragging = false; // Initially not dragging
     startX = touches[0].x;
@@ -925,17 +845,13 @@ function touchStarted() {
 
 function touchMoved() {
   if (touches.length > 0 && touches[0].y > canvasTopBoundary) {
-    isDragging = true; // Touch is being dragged
-
+    isDragging = true;
     let currentTouchX = touches[0].x;
     let currentTouchY = touches[0].y;
-
     let deltaX = currentTouchX - previousTouchX;
     let deltaY = currentTouchY - previousTouchY;
-
-    angleY -= deltaX * 0.008; // Adjust sensitivity as needed
-    rotationalValue = angleY / TWO_PI % 1;
-
+    angleY -= deltaX * 0.008;
+    rotationalValue = (angleY / TWO_PI) % 1;
     previousTouchX = currentTouchX;
     previousTouchY = currentTouchY;
   }
@@ -943,44 +859,39 @@ function touchMoved() {
 
 function touchEnded() {
   clearTimeout(debounceTimer);
-
   debounceTimer = setTimeout(() => {
-    // Only process if there was an initial touch
-    if (typeof startX !== 'undefined' && typeof startY !== 'undefined') {
+    if (typeof startX !== "undefined" && typeof startY !== "undefined") {
       // Calculate distance moved during touch
       let dx = previousTouchX - startX;
       let dy = previousTouchY - startY;
       let touchMovedDistance = Math.sqrt(dx * dx + dy * dy);
 
       if (!isDragging && touchMovedDistance < touchThreshold) {
-        let transformedMouseX = mouseX - width / 2;
-        let transformedMouseY = mouseY - height / 2;
+        let transformedTouchX = startX - width / 2;
+        let transformedTouchY = startY - height / 2;
         let buttonClicked = false;
 
         for (let btn of ellipseButtons) {
-          let d = dist(transformedMouseX, transformedMouseY, btn.x, btn.y);
+          let d = dist(transformedTouchX, transformedTouchY, btn.x, btn.y);
           if (d < btn.size / 2) {
             updateIndividualInstrumentArray(btn.id);
             buttonClicked = true;
           }
         }
-        
         if (!buttonClicked) {
-          handleNoteClick(); // Handle note creation if not dragging and touch distance is within threshold
+          handleNoteClick();
         }
       }
-
-      // Reset startX and startY for the next touch
       startX = undefined;
       startY = undefined;
     }
-  }, 100); // Adjust debounce delay as needed (e.g., 100 milliseconds)
+  }, 100); // debounce
 }
 
 function handleNoteClick() {
   translate(width / 2, height / 2);
   let nearestPoint = null;
-  let nearestDistance = Infinity; // Track the nearest distance
+  let nearestDistance = Infinity;
 
   for (let i = 0; i < cylinderCoordinates.length; i++) {
     for (let j = 0; j < cylinderCoordinates[i].length; j++) {
@@ -991,22 +902,24 @@ function handleNoteClick() {
       let projectedX = projectionMath.x * scaleFactor;
       let projectedY = projectionMath.y * scaleFactor;
 
-      // Check the distance between mouse and projected point
-      let d = dist(mouseX - width / 2, mouseY - height / 2, projectedX, projectedY);
+      let d = dist(
+        mouseX - width / 2,
+        mouseY - height / 2,
+        projectedX,
+        projectedY
+      );
 
-      // Consider the point if it's closer than previous points and within a 10-pixel radius
       if (d < nearestDistance && d < 20) {
-        let alphaThreshold = 100; // Adjust for better alpha detection
+        // pixel radius (20)
+        let alphaThreshold = 100;
         let alphaValue = map(scaleFactor, 0.9, 2, 0, 255);
         if (alphaValue >= alphaThreshold) {
           nearestPoint = { x: projectedX, y: projectedY, i, j };
-          nearestDistance = d; // Update the nearest distance
+          nearestDistance = d;
         }
       }
     }
   }
-
-  // Toggle the note at the nearest point if one was found
   if (nearestPoint !== null) {
     let { i, j } = nearestPoint;
     if (notes[i][j]) {
@@ -1016,56 +929,41 @@ function handleNoteClick() {
       colors[i][j] = color(0, 0, 0);
       notes[i][j] = true;
     }
-    // print(notes); debug
   }
 }
 
 function resizeCanvasToWindow() {
-  // Resize the canvas to the window's width and height
   resizeCanvas(windowWidth, windowHeight);
 }
 
 function updateIndividualInstrumentArray(indexToUpdate) {
-  // Clear previous debounce timer
   clearTimeout(debounceTimerArray);
-
-  // Set a new debounce timer
   debounceTimerArray = setTimeout(() => {
-    // Ensure indexToUpdate is within valid range
-    if (indexToUpdate >= 0 && indexToUpdate < individualInstrumentArray.length) {
-      
-      // map the value according to scale dictionary
+    if (
+      indexToUpdate >= 0 &&
+      indexToUpdate < individualInstrumentArray.length
+    ) {
       indexToUpdate = scaleMappings[indexToUpdate];
-      
-      
-      // Update the value at the specified indexToUpdate
-      // Increment the value and constrain it to 1, 2, or 3
-      individualInstrumentArray[indexToUpdate] = (individualInstrumentArray[indexToUpdate] % 3) + 1;
-      
-      // Reload audio set with updated individualInstrumentArray
+      individualInstrumentArray[indexToUpdate] =
+        (individualInstrumentArray[indexToUpdate] % 3) + 1;
       loadAudioSet(individualInstrumentArray);
     }
-  }, 50); // Adjust debounce delay as needed (e.g., 50 milliseconds)
+  }, 50); // debounce
 }
 
 function changeInstrument() {
-  // Initialise new sample set here
   let selectedInstrument = instrumentDropdown.value();
-  if (selectedInstrument !== 'disabled') {
-    // Process selected scale
-    
-    if (selectedInstrument === 'Comb') {
+  if (selectedInstrument !== "disabled") {
+    if (selectedInstrument === "Comb") {
       individualInstrumentArray = new Array(37).fill(1);
-    }    
-    
-    if (selectedInstrument === 'Piano') {
+    }
+    if (selectedInstrument === "Piano") {
       individualInstrumentArray = new Array(37).fill(2);
     }
-    if (selectedInstrument === 'Harp') {
+    if (selectedInstrument === "Harp") {
       individualInstrumentArray = new Array(37).fill(3);
     }
-    console.log('Selected instrument:', selectedInstrument);
-    
+    console.log("Selected instrument:", selectedInstrument);
     loadAudioSet(individualInstrumentArray);
   }
 }
