@@ -19,6 +19,8 @@ let cylinderYCoordinates;
 let clearButton;
 let canvasTopBoundary = 70;
 
+let randomButton;
+
 // start index for playback array
 let angleX = 0;
 let angleY = 0;
@@ -393,7 +395,7 @@ function setup() {
   positionplus_minus_Buttons();
 
   let sliderWrapper = select(".slider-wrapper");
-  durationSlider = createSlider(200, 1000, 800); // Min 200 ms, Max 1s, Initial 200 ms
+  durationSlider = createSlider(200, 1000, 800); // Min 200 ms, Max 1s, Initial 800 ms
   positionDurationSlider();
   durationSlider.parent(sliderWrapper);
   durationSlider.style("width", "90px");
@@ -405,6 +407,11 @@ function setup() {
   clearButton.size(45, 45);
   clearButton.touchStarted(clearNotes);
   positionclearButton();
+  
+  randomButton = createImg("images/random_button.jpg", "R")
+  randomButton.size(45, 45);
+  randomButton.touchStarted(randomiseEverything);
+  positionrandomButton();  
 
   scalesDropdown = createSelect();
   scalesDropdown.option("Select a Scale:", ""); // This will be the heading
@@ -771,6 +778,10 @@ function positionclearButton() {
   clearButton.position(windowWidth - 50, 80);
 }
 
+function positionrandomButton() {
+  randomButton.position(windowWidth - 50, 140);
+}
+
 function positionMetroIcon() {
   metroImage.position(65, 20);
 }
@@ -966,4 +977,54 @@ function changeInstrument() {
     console.log("Selected instrument:", selectedInstrument);
     loadAudioSet(individualInstrumentArray);
   }
+}
+
+function randomiseEverything() {
+  
+  randomTempo = randomInt(300, 1000); // avoid slowest option
+  durationSlider.value(randomTempo);
+  print(randomTempo);
+  
+  // start with number of notes
+  totalVerticalPoints = int(random(10)) + 3;
+  
+  randomScale = random(["Major Pentatonic", "Minor Pentatonic", "Major scale", "Dorian mode", "Mixolydian mode", "Aeolian mode", "Chromatic", "Harmonic Minor", "Whole Tone", "Octatonic"]);
+  scalesDropdown.selected(randomScale);
+  changeScale();
+
+  updateArraysForVerticalPoints();  
+  
+  // individ. instruments
+  individualInstrumentArray = [];
+  for (let i = 0; i < 37; i++) {
+  individualInstrumentArray.push(randomInt(1, 3));
+}
+  loadAudioSet(individualInstrumentArray);  
+  
+  randomDensity = random(0.5) + 0.4;
+
+  // Randomize the notes and colors with no consecutive notes on the same row
+  for (let i = 0; i < totalVerticalPoints; i++) {
+    let previousNote = false;
+    for (let j = 0; j < totalHorizontalPoints; j++) {
+      if (previousNote) {
+        notes[i][j] = false;
+        previousNote = false;
+      } else {
+        notes[i][j] = Math.random() >= randomDensity; // 1/3 chance to create a note
+        previousNote = notes[i][j];
+      }
+
+      // Set color based on the random note
+      if (notes[i][j]) {
+        colors[i][j] = color(Math.random() * 255, Math.random() * 255, Math.random() * 255); // Random color for a note
+      } else {
+        colors[i][j] = color(0, 0, 0, 35); // Default color for no note
+      }
+    }
+  }
+}
+
+function randomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
