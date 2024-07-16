@@ -9,6 +9,7 @@ let ellipseColors = [
   [255, 228, 209], // Red [255,228,209]
   [203, 237, 209], // Green [203,237,209]
   [167, 234, 255], // Blue [187,234,255]
+  
 ];
 
 let individualInstrumentArray = new Array(37).fill(1);
@@ -983,7 +984,6 @@ function randomiseEverything() {
   
   randomTempo = randomInt(300, 1000); // avoid slowest option
   durationSlider.value(randomTempo);
-  print(randomTempo);
   
   // start with number of notes
   totalVerticalPoints = int(random(10)) + 3;
@@ -1001,7 +1001,8 @@ function randomiseEverything() {
 }
   loadAudioSet(individualInstrumentArray);  
   
-  randomDensity = random(0.5) + 0.4;
+  randomDensity = random(0.4) + 0.55;
+  print(randomDensity);
 
   // Randomize the notes and colors with no consecutive notes on the same row
   for (let i = 0; i < totalVerticalPoints; i++) {
