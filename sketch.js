@@ -3,6 +3,8 @@ let debounceTimer;
 let debounceTimerArray;
 let loadedInstrumentSetBuffers = {};
 
+let lastState = '';
+
 let buttonSize = 20;
 let ellipseButtons = [];
 let ellipseColors = [
@@ -105,6 +107,9 @@ let lineSpacing = 37;
 function preload() {
   audioContext = new (window.AudioContext || window.webkitAudioContext)();
   loadAudioSet(individualInstrumentArray);
+  audioContext.suspend().then(() => {
+    console.log('AudioContext state in preload:', audioContext.state);
+  });  
 }
 
 function loadAudioSet(individualInstrumentArray) {
@@ -372,6 +377,12 @@ let octatonic = {
 let scaleMappings = majorPentatonic;
 
 function setup() {
+  // Suspend the AudioContext
+  audioContext.suspend().then(() => {
+    console.log('AudioContext suspended in setup:', audioContext.state);
+  }).catch((err) => {
+    console.error('Error suspending AudioContext:', err);
+  });  
   createCanvas(windowWidth, windowHeight, WEBGL);
   window.addEventListener("resize", resizeCanvasToWindow);
   frameRate(60);
@@ -594,6 +605,7 @@ async function togglePlayback() {
 
     isPlaying = true;
     clearButton.attribute("src", "images/bin_greyed.jpg");
+    randomButton.attribute('src', 'images/random_button_disabled.jpg');
     startTime = millis();
     playAllNotes();
     playButton.attribute("src", "images/stop_icon.jpg");
@@ -602,6 +614,7 @@ async function togglePlayback() {
     // Stop
     isPlaying = false;
     clearButton.attribute("src", "images/bin_icon.jpg");
+    randomButton.attribute('src', 'images/random_button.jpg');
     clearTimeouts();
     playButton.attribute("src", "images/play_icon.jpg");
     durationSlider.removeAttribute("disabled");
@@ -843,8 +856,16 @@ function drawfixedHorizontalLines(cylinderYCoordinates) {
 }
 
 function touchStarted() {
-  if (getAudioContext().state !== "running") {
-    getAudioContext().resume();
+  if (audioContext.state !== 'running') {
+    userStartAudio().then(() => {
+      audioContext.resume().then(() => {
+        console.log('AudioContext resumed on mousePressed:', audioContext.state);
+      }).catch((err) => {
+        console.error('Error resuming AudioContext:', err);
+      });
+    }).catch((err) => {
+      console.error('Error starting user audio:', err);
+    });
   }
   if (touches.length > 0) {
     isDragging = false; // Initially not dragging
@@ -981,46 +1002,48 @@ function changeInstrument() {
 }
 
 function randomiseEverything() {
+  if (!isPlaying) {  
   
-  randomTempo = randomInt(300, 1000); // avoid slowest option
-  durationSlider.value(randomTempo);
-  
-  // start with number of notes
-  totalVerticalPoints = int(random(10)) + 3;
-  
-  randomScale = random(["Major Pentatonic", "Minor Pentatonic", "Major scale", "Dorian mode", "Mixolydian mode", "Aeolian mode", "Chromatic", "Harmonic Minor", "Whole Tone", "Octatonic"]);
-  scalesDropdown.selected(randomScale);
-  changeScale();
+    randomTempo = randomInt(300, 1000); // avoid slowest option
+    durationSlider.value(randomTempo);
 
-  updateArraysForVerticalPoints();  
-  
-  // individ. instruments
-  individualInstrumentArray = [];
-  for (let i = 0; i < 37; i++) {
-  individualInstrumentArray.push(randomInt(1, 3));
-}
-  loadAudioSet(individualInstrumentArray);  
-  
-  randomDensity = random(0.4) + 0.55;
-  print(randomDensity);
+    // start with number of notes
+    totalVerticalPoints = int(random(10)) + 3;
 
-  // Randomize the notes and colors with no consecutive notes on the same row
-  for (let i = 0; i < totalVerticalPoints; i++) {
-    let previousNote = false;
-    for (let j = 0; j < totalHorizontalPoints; j++) {
-      if (previousNote) {
-        notes[i][j] = false;
-        previousNote = false;
-      } else {
-        notes[i][j] = Math.random() >= randomDensity; // 1/3 chance to create a note
-        previousNote = notes[i][j];
-      }
+    randomScale = random(["Major Pentatonic", "Minor Pentatonic", "Major scale", "Dorian mode", "Mixolydian mode", "Aeolian mode", "Chromatic", "Harmonic Minor", "Whole Tone", "Octatonic"]);
+    scalesDropdown.selected(randomScale);
+    changeScale();
 
-      // Set color based on the random note
-      if (notes[i][j]) {
-        colors[i][j] = color(Math.random() * 255, Math.random() * 255, Math.random() * 255); // Random color for a note
-      } else {
-        colors[i][j] = color(0, 0, 0, 35); // Default color for no note
+    updateArraysForVerticalPoints();  
+
+    // individ. instruments
+    individualInstrumentArray = [];
+    for (let i = 0; i < 37; i++) {
+    individualInstrumentArray.push(randomInt(1, 3));
+  }
+    loadAudioSet(individualInstrumentArray);  
+
+    randomDensity = random(0.4) + 0.55;
+    print(randomDensity);
+
+    // Randomize the notes and colors with no consecutive notes on the same row
+    for (let i = 0; i < totalVerticalPoints; i++) {
+      let previousNote = false;
+      for (let j = 0; j < totalHorizontalPoints; j++) {
+        if (previousNote) {
+          notes[i][j] = false;
+          previousNote = false;
+        } else {
+          notes[i][j] = Math.random() >= randomDensity; // 1/3 chance to create a note
+          previousNote = notes[i][j];
+        }
+
+        // Set color based on the random note
+        if (notes[i][j]) {
+          colors[i][j] = color(Math.random() * 255, Math.random() * 255, Math.random() * 255); // Random color for a note
+        } else {
+          colors[i][j] = color(0, 0, 0, 35); // Default color for no note
+        }
       }
     }
   }
