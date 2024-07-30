@@ -1010,7 +1010,7 @@ function randomiseEverything() {
     // start with number of notes
     totalVerticalPoints = int(random(10)) + 3;
 
-    randomScale = random(["Major Pentatonic", "Minor Pentatonic", "Major scale", "Dorian mode", "Mixolydian mode", "Aeolian mode", "Chromatic", "Harmonic Minor", "Whole Tone", "Octatonic"]);
+    randomScale = random(["Major Pentatonic", "Major Pentatonic", "Minor Pentatonic", "Minor Pentatonic", "Major scale", "Dorian mode", "Mixolydian mode", "Aeolian mode", "Chromatic", "Harmonic Minor", "Whole Tone", "Octatonic"]);
     scalesDropdown.selected(randomScale);
     changeScale();
 
